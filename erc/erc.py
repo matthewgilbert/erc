@@ -4,7 +4,7 @@ import scipy.optimize
 EPS = 0.001
 
 
-def calc_weights(cov, **kwargs):
+def calc_weights(cov, options=None):
     """
     Calculate the weights associated with the equal risk contribution
     portfolio. Refer to "On the Properties of Equally-Weighted Risk
@@ -16,8 +16,8 @@ def calc_weights(cov, **kwargs):
     cov: numpy.ndarray
         (N, N) covariance matrix of assets, must be positive definite
 
-    kwargs: keyword arguments
-        Key word arguements to be passed into scipy.optimize.minim
+    options: dictionary
+        A dictionary of solver options. See scipy.optimize.minimize.
 
     Returns
     -------
@@ -27,6 +27,9 @@ def calc_weights(cov, **kwargs):
 
     # check matrix is PD
     np.linalg.cholesky(cov)
+
+    if not options:
+        options = {'ftol': 1e-20, 'maxiter': 800}
 
     N = cov.shape[0]
     x0 = np.ones(N) / N
@@ -39,13 +42,13 @@ def calc_weights(cov, **kwargs):
         risk_diffs = a - a.transpose()
         sum_risk_diffs_squared = np.sum(np.square(np.ravel(risk_diffs)))
         # https://stackoverflow.com/a/36685019/1451311
-        return sum_risk_diffs_squared/SCALE_FACTOR
+        return sum_risk_diffs_squared / SCALE_FACTOR
 
     bounds = [(0, 1) for i in range(N)]
     constraints = {'type': 'eq', 'fun': lambda x: np.sum(x) - 1}
     res = scipy.optimize.minimize(fun, x0, method='SLSQP', bounds=bounds,
                                   constraints=constraints,
-                                  options={'ftol': 1e-20, 'maxiter': 500})
+                                  options=options)
     weights = res.x
     risk = weights.dot(cov).dot(weights)
     # res.fun is the sum of squared differences in risk contributions. Taking
