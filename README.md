@@ -11,3 +11,18 @@ You can pip install this package from github, i.e.
 ```
 pip install git+git://github.com/matthewgilbert/erc.git@master
 ```
+
+# Requires
+
+```
+numpy
+scipy
+```
+
+For testing also requires
+
+```
+coveralls
+flake8
+pytest-cov
+```
