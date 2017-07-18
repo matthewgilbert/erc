@@ -1,3 +1,6 @@
+[![Build Status](https://travis-ci.org/matthewgilbert/erc.svg?branch=master)](https://travis-ci.org/matthewgilbert/erc)
+[![Coverage Status](https://coveralls.io/repos/github/matthewgilbert/erc/badge.svg?branch=master)](https://coveralls.io/github/matthewgilbert/erc?branch=master)
+
 This is an implementation of the equal weighted risk contributions algorithm (6)
 outlined in *"On the properties of equally-weighted risk contributions
 portfolios"* by *Maillard, Roncalli, and Teiletche* available
