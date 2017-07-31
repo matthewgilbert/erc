@@ -1,10 +1,10 @@
 import numpy as np
 import scipy.optimize
 
-EPS = 0.001
+MAX_ALLOWED_PCR_DIFF = 0.001
 
 
-def calc_weights(cov, options=None):
+def calc_weights(cov, x0=None, options=None, scale_factor=10000):
     """
     Calculate the weights associated with the equal risk contribution
     portfolio. Refer to "On the Properties of Equally-Weighted Risk
@@ -15,9 +15,14 @@ def calc_weights(cov, options=None):
     ----------
     cov: numpy.ndarray
         (N, N) covariance matrix of assets, must be positive definite
-
+    x0: numpy.ndarray
+        (N,) initial solution guess. If None is given uses inverse of standard
+        deviation regularized to be between 0 and 1.
     options: dictionary
         A dictionary of solver options. See scipy.optimize.minimize.
+    scale_factor: float
+        Number to scale the optimization function by, can be helpful for
+        convergence
 
     Returns
     -------
@@ -31,18 +36,21 @@ def calc_weights(cov, options=None):
     if not options:
         options = {'ftol': 1e-20, 'maxiter': 800}
 
-    N = cov.shape[0]
-    x0 = np.ones(N) / N
-
-    SCALE_FACTOR = 1000
-
     def fun(x):
+        # these are non normalized risk contributions, i.e. not regularized
+        # by total risk, seems to help numerically
         risk_contributions = x.dot(cov) * x
         a = np.reshape(risk_contributions, (len(risk_contributions), 1))
+        # broadcasts so you get pairwise differences in risk contributions
         risk_diffs = a - a.transpose()
         sum_risk_diffs_squared = np.sum(np.square(np.ravel(risk_diffs)))
         # https://stackoverflow.com/a/36685019/1451311
-        return sum_risk_diffs_squared / SCALE_FACTOR
+        return sum_risk_diffs_squared / scale_factor
+
+    N = cov.shape[0]
+    if x0 is None:
+        x0 = 1 / np.sqrt(np.diag(cov))
+        x0 = x0 / x0.sum()
 
     bounds = [(0, 1) for i in range(N)]
     constraints = {'type': 'eq', 'fun': lambda x: np.sum(x) - 1}
@@ -50,18 +58,15 @@ def calc_weights(cov, options=None):
                                   constraints=constraints,
                                   options=options)
     weights = res.x
-    risk = weights.dot(cov).dot(weights)
-    # res.fun is the sum of squared differences in risk contributions. Taking
-    # the sqrt of this puts it back in units of risk and dividing through by
-    # total risk makes this in units of percent contributions to risk, which
-    # makes things scale agnostic when comparing
-    sum_pcr_diffs = np.sqrt(res.fun) / risk
+    risk_squared = weights.dot(cov).dot(weights)
+    pcrs = weights.dot(cov) * weights / risk_squared
+    pcrs = np.reshape(pcrs, (len(pcrs), 1))
+    pcr_max_diff = np.max(np.abs(pcrs - pcrs.transpose()))
     if not res.success:
         raise RuntimeError(res)
-    if sum_pcr_diffs > EPS:
-        raise RuntimeError("Ratio of root sum of squared risk contribution "
-                           "differences to portfolio covariance is %s, should "
-                           "be within tolerance %s of 0" % (sum_pcr_diffs,
-                                                            EPS))
+    if pcr_max_diff > MAX_ALLOWED_PCR_DIFF:
+        raise RuntimeError("Max difference in percentage contribution to risk "
+                           "is %s which exceeds tolerance of %s." %
+                           (pcr_max_diff, MAX_ALLOWED_PCR_DIFF))
 
     return weights
