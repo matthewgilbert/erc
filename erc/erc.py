@@ -66,7 +66,7 @@ def calc_weights(cov, x0=None, options=None, scale_factor=10000):
         raise RuntimeError(res)
     if pcr_max_diff > MAX_ALLOWED_PCR_DIFF:
         raise RuntimeError("Max difference in percentage contribution to risk "
-                           "is %s which exceeds tolerance of %s." %
+                           "in decimals is %s which exceeds tolerance of %s." %
                            (pcr_max_diff, MAX_ALLOWED_PCR_DIFF))
 
     return weights
