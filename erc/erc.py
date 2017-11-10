@@ -1,5 +1,6 @@
 import numpy as np
 import scipy.optimize
+import warnings
 
 MAX_ALLOWED_PCR_DIFF = 0.001
 
@@ -28,6 +29,13 @@ def calc_weights(cov, x0=None, options=None, scale_factor=10000):
     -------
     w: numpy.ndarray
         (N,) array of asset weights
+
+    Notes: The objective function from the paper embodies but is not exactly
+    the same as the desired result, which is to have equal risk contributions
+    for each asset. As a result, there are scenarios where the maxiter will be
+    exceeded (i.e. non convergence) when in fact the goal of having equal risk
+    contributions within some acceptable tolerance has been achieved. In these
+    scenaries playing around with 'ftol' and 'maxiter' in 'options' is helpful.
     """
 
     # check matrix is PD
@@ -63,6 +71,9 @@ def calc_weights(cov, x0=None, options=None, scale_factor=10000):
     pcrs = np.reshape(pcrs, (len(pcrs), 1))
     pcr_max_diff = np.max(np.abs(pcrs - pcrs.transpose()))
     if not res.success:
+        msg = ("Max difference in percentage contribution to risk "
+               "in decimals is %s" % pcr_max_diff)
+        warnings.warn(msg)
         raise RuntimeError(res)
     if pcr_max_diff > MAX_ALLOWED_PCR_DIFF:
         raise RuntimeError("Max difference in percentage contribution to risk "
