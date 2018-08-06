@@ -87,6 +87,18 @@ class TestERC(unittest.TestCase):
         pcr_exp = np.array([0.333, 0.333, 0.333])
         assert_almost_equal(pcr, pcr_exp, decimal=3)
 
+    def test_pcr_tolerance(self):
+        cov = np.array(
+          [[1.943718516077124966e-02, -2.439418300721416140e-03, 4.698396459820822213e-02],  # NOQA
+           [-2.439418300721416140e-03, 2.421052572519334818e-03, -6.379692612692000608e-03],  # NOQA
+           [4.698396459820822213e-02, -6.379692612692000608e-03, 1.757242094792315912e-01]]  # NOQA
+        )
+        self.assertRaises(
+            RuntimeError, erc.calc_weights, cov,
+            options={'ftol': 1e-10, 'maxiter': 100}, scale_factor=1000,
+            pcr_tolerance=1e-5
+        )
+
     def test_non_psd(self):
         cov = np.array([[-2, 0], [0, 1]])
 
