@@ -59,6 +59,34 @@ class TestERC(unittest.TestCase):
         pcr_exp = np.ones(len(pcr)) / len(pcr)
         assert_almost_equal(pcr, pcr_exp, decimal=6)
 
+    def test_ignore_objective(self):
+        # test for https://github.com/matthewgilbert/erc/issues/1
+        cov = np.array(
+          [[1.943718516077124966e-02, -2.439418300721416140e-03, 4.698396459820822213e-02],  # NOQA
+           [-2.439418300721416140e-03, 2.421052572519334818e-03, -6.379692612692000608e-03],  # NOQA
+           [4.698396459820822213e-02, -6.379692612692000608e-03, 1.757242094792315912e-01]]  # NOQA
+        )
+        # do not ignore the objective
+        self.assertRaises(
+            RuntimeError, erc.calc_weights, cov,
+            options={'ftol': 1e-20, 'maxiter': 100}, scale_factor=1000,
+            pcr_tolerance=0.001, ignore_objective=False
+        )
+        # ignore object, tolerance not met
+        self.assertRaises(
+            RuntimeError, erc.calc_weights, cov,
+            options={'ftol': 1e-20, 'maxiter': 100}, scale_factor=1000,
+            pcr_tolerance=1e-12, ignore_objective=True
+        )
+        # ignore object, tolerance met
+        weights = erc.calc_weights(
+            cov, options={'ftol': 1e-20, 'maxiter': 100}, scale_factor=1000,
+            pcr_tolerance=0.001, ignore_objective=True
+        )
+        pcr = weights.dot(cov) * weights / (weights.dot(cov).dot(weights))
+        pcr_exp = np.array([0.333, 0.333, 0.333])
+        assert_almost_equal(pcr, pcr_exp, decimal=3)
+
     def test_non_psd(self):
         cov = np.array([[-2, 0], [0, 1]])
 
