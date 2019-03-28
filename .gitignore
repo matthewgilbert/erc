@@ -2,3 +2,5 @@
 .coverage
 erc/__pycache__
 erc/tests/__pycache__
+.pytest_cache
+erc.egg-info
