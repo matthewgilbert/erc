@@ -1,10 +1,18 @@
-import numpy as np
-import scipy.optimize
 import warnings
 
+import numpy as np
+import scipy.optimize
 
-def calc_weights(cov, x0=None, options=None, scale_factor=10000,
-                 pcr_tolerance=0.001, ignore_objective=False):
+
+def calc_weights(
+        cov,
+        x0=None,
+        options=None,
+        scale_factor=10000,
+        pcr_tolerance=0.001,
+        ignore_objective=False,
+        **kwargs,
+):
     """
     Calculate the weights associated with the equal risk contribution
     portfolio. Refer to "On the Properties of Equally-Weighted Risk
@@ -29,6 +37,8 @@ def calc_weights(cov, x0=None, options=None, scale_factor=10000,
     ignore_objective: False
         Provided the max difference in PCR satifies pcr_tolerance, ignore
         whether the objective function has converged. See Notes below.
+    **kwargs
+        Any additional keyword arguments. See scipy.optimize.minimize.
 
 
     Returns
@@ -76,7 +86,7 @@ def calc_weights(cov, x0=None, options=None, scale_factor=10000,
     constraints = {'type': 'eq', 'fun': lambda x: np.sum(x) - 1}
     res = scipy.optimize.minimize(fun, x0, method='SLSQP', bounds=bounds,
                                   constraints=constraints,
-                                  options=options)
+                                  options=options, **kwargs)
     weights = res.x
     risk_squared = weights.dot(cov).dot(weights)
     pcrs = weights.dot(cov) * weights / risk_squared

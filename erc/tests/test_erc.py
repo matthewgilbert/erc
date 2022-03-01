@@ -106,3 +106,16 @@ class TestERC(unittest.TestCase):
             erc.calc_weights(cov)
 
         self.assertRaises(np.linalg.LinAlgError, solve_erc)
+
+    def test_callback_kwarg(self):
+        """ Test for https://github.com/matthewgilbert/erc/issues/2 """
+        # Define a callback that immediately raises some special exception
+        class SpecialException(Exception):
+            pass
+
+        def special_callback(*args):
+            raise SpecialException
+
+        cov = np.array([[2, 0], [0, 1]])
+
+        self.assertRaises(SpecialException, erc.calc_weights(cov, callback=special_callback))
